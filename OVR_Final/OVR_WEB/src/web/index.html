@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ocean View Resort – Reservation System</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --teal:#004d4d;--teal2:#006e6e;--teal3:#009688;
+  --gold:#d4af37;--goldl:#f5d96b;
+  --bg:#f0f5f5;--white:#fff;
+  --txt:#1a2e2e;--txt2:#4a6e6e;--txt3:#7aa0a0;
+  --green:#1b5e20;--red:#b71c1c;--amber:#e65100;--purple:#4a148c;
+  --sh:0 4px 24px rgba(0,77,77,.10);--shl:0 8px 40px rgba(0,77,77,.16);
+  --r:14px;--rs:8px;--tr:all .2s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+.hidden{display:none!important}
+.page{display:none;min-height:100vh}
+.page.active{display:block}
+
+/* TOAST */
+#toasts{position:fixed;top:18px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--teal);color:var(--goldl);font-size:13px;font-weight:500;
+  padding:11px 18px;border-radius:var(--rs);border-left:4px solid var(--gold);
+  box-shadow:var(--shl);transform:translateX(120%);transition:transform .3s ease;max-width:300px}
+.toast.show{transform:translateX(0)}
+.toast.ok{border-color:#4caf50}.toast.err{border-color:var(--red);background:#3b0000;color:#ff8a80}
+
+/* LOADER */
+#loader{position:fixed;inset:0;background:rgba(0,40,40,.55);backdrop-filter:blur(3px);
+  z-index:8888;display:flex;align-items:center;justify-content:center}
+.spin{width:38px;height:38px;border:3px solid rgba(212,175,55,.2);border-top-color:var(--gold);
+  border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+.ld-box{background:var(--teal);border-radius:var(--r);padding:28px 44px;text-align:center;border:1px solid var(--gold)}
+.ld-box p{color:var(--goldl);font-size:13px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* LOGIN */
+#page-login{min-height:100vh;background:linear-gradient(135deg,#002929,#004d4d,#003535);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+#page-login::before{content:'';position:absolute;width:500px;height:500px;
+  background:radial-gradient(circle,rgba(212,175,55,.08),transparent 70%);top:-120px;right:-120px;border-radius:50%}
+.lcard{background:rgba(255,255,255,.05);backdrop-filter:blur(18px);
+  border:1px solid rgba(212,175,55,.25);border-radius:20px;padding:48px 48px 40px;
+  width:100%;max-width:420px;position:relative;z-index:1;
+  box-shadow:0 24px 80px rgba(0,0,0,.4);animation:fadeUp .5s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.ldiv{height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin-bottom:18px}
+.ltitle{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--goldl);
+  letter-spacing:2px;text-transform:uppercase;text-align:center;margin-bottom:4px}
+.lsub{text-align:center;font-size:12px;color:rgba(180,220,215,.75)}
+.lloc{text-align:center;font-size:10px;color:rgba(130,180,170,.6);margin-top:3px;letter-spacing:1px}
+.lh2{font-family:'Playfair Display',serif;font-size:17px;color:var(--white);text-align:center;margin:24px 0 20px}
+.lbl{display:block;font-size:10px;font-weight:600;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px}
+.linp{width:100%;padding:12px 15px;background:rgba(255,255,255,.06);
+  border:1px solid rgba(0,150,136,.35);border-radius:var(--rs);
+  color:var(--white);font-family:'DM Sans',sans-serif;font-size:14px;transition:var(--tr);outline:none}
+.linp::placeholder{color:rgba(255,255,255,.3)}
+.linp:focus{border-color:var(--gold);background:rgba(255,255,255,.09)}
+.lg{margin-bottom:18px}
+#ls{text-align:center;font-size:12px;min-height:18px;margin-bottom:14px;font-weight:500}
+#ls.err{color:#ff6b6b}#ls.ok{color:#69f0ae}#ls.info{color:var(--goldl)}
+.lbtn{width:100%;padding:13px;background:linear-gradient(135deg,var(--gold),#b8960c);
+  border:none;border-radius:var(--rs);color:var(--teal);font-family:'DM Sans',sans-serif;
+  font-size:15px;font-weight:700;cursor:pointer;transition:var(--tr);margin-bottom:12px}
+.lbtn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(212,175,55,.35)}
+.lhint{text-align:center;font-size:11px;color:rgba(255,255,255,.3)}
+
+/* APP LAYOUT */
+.app{display:flex;min-height:100vh}
+.sb{width:250px;min-height:100vh;background:linear-gradient(180deg,var(--teal),#002e2e);
+  border-right:1px solid rgba(212,175,55,.15);display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sb-brand{padding:22px 20px 16px;border-bottom:1px solid rgba(212,175,55,.15)}
+.sb-brand h2{font-family:'Playfair Display',serif;font-size:15px;color:var(--goldl);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px}
+.sb-brand p{font-size:10px;color:rgba(160,210,200,.65)}
+.sb-staff{padding:11px 20px;border-bottom:1px solid rgba(212,175,55,.1);background:rgba(0,0,0,.12)}
+.sb-staff .sl{font-size:9px;color:rgba(160,210,200,.5);text-transform:uppercase;letter-spacing:1px}
+.sb-staff .sn{font-size:13px;color:var(--goldl);font-weight:600;margin-top:2px}
+.sb-notif{padding:8px 14px;background:rgba(0,150,100,.1);border-bottom:1px solid rgba(0,150,100,.2);
+  font-size:11px;color:rgba(100,220,160,.9);min-height:32px;font-style:italic;transition:var(--tr)}
+.nsec{padding:13px 13px 4px}
+.nsect{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(160,210,200,.45);padding:0 7px;margin-bottom:5px}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--rs);
+  cursor:pointer;color:rgba(255,255,255,.6);font-size:13px;font-weight:500;
+  transition:var(--tr);border-left:3px solid transparent;margin-bottom:2px}
+.ni:hover{background:rgba(255,255,255,.07);color:var(--white)}
+.ni.active{background:rgba(212,175,55,.12);color:var(--goldl);border-left-color:var(--gold)}
+.ni-ic{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.ndiv{height:1px;background:rgba(212,175,55,.1);margin:7px 13px}
+.sb-foot{margin-top:auto;padding:13px;border-top:1px solid rgba(212,175,55,.1)}
+.btn-lo{width:100%;padding:9px;border-radius:var(--rs);background:rgba(183,28,28,.15);
+  border:1px solid rgba(183,28,28,.3);color:#ff6b6b;font-size:13px;font-weight:600;
+  cursor:pointer;transition:var(--tr);font-family:'DM Sans',sans-serif}
+.btn-lo:hover{background:rgba(183,28,28,.3)}
+.main{margin-left:250px;flex:1;display:flex;flex-direction:column}
+.mhdr{background:var(--white);border-bottom:1px solid rgba(0,77,77,.1);
+  padding:15px 26px;display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 8px rgba(0,77,77,.06);position:sticky;top:0;z-index:50}
+.mhdr h1{font-family:'Playfair Display',serif;font-size:20px;color:var(--teal);font-weight:600}
+.dbadge{font-size:11px;color:var(--txt3);background:var(--bg);padding:5px 12px;border-radius:20px}
+.cnt{padding:24px 26px;flex:1}
+
+/* CARD */
+.card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;margin-bottom:18px}
+.chd{padding:16px 20px 12px;border-bottom:1px solid rgba(0,77,77,.08);
+  display:flex;align-items:center;justify-content:space-between}
+.chd-l{display:flex;align-items:center;gap:9px}
+.chd h2{font-family:'Playfair Display',serif;font-size:17px;color:var(--teal);font-weight:600}
+.cb{padding:20px}
+
+/* STATS */
+.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.sc{background:var(--white);border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh);border-top:4px solid;transition:var(--tr)}
+.sc:hover{transform:translateY(-2px);box-shadow:var(--shl)}
+.sc.g{border-color:var(--green)}.sc.t{border-color:var(--teal3)}.sc.a{border-color:var(--amber)}.sc.p{border-color:var(--purple)}
+.slbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--txt3);margin-bottom:8px}
+.sval{font-family:'Playfair Display',serif;font-size:26px;font-weight:700}
+.sc.g .sval{color:var(--green)}.sc.t .sval{color:var(--teal3)}.sc.a .sval{color:var(--amber)}.sc.p .sval{color:var(--purple)}
+
+/* BUTTONS */
+.btn{padding:9px 18px;border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:13px;
+  font-weight:600;cursor:pointer;border:none;transition:var(--tr);display:inline-flex;align-items:center;gap:6px}
+.btn:hover{transform:translateY(-1px)}.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+.bt{background:var(--teal);color:var(--white)}.bt:hover{background:var(--teal2)}
+.bg{background:var(--gold);color:var(--teal)}.bg:hover{background:var(--goldl)}
+.bd{background:var(--red);color:var(--white)}.bd:hover{background:#c62828}
+.bo{background:transparent;border:1.5px solid var(--teal);color:var(--teal)}.bo:hover{background:var(--teal);color:var(--white)}
+.bs{padding:6px 12px;font-size:12px}
+
+/* FORMS */
+.fg{margin-bottom:15px}
+.fg label{display:block;font-size:12px;font-weight:600;color:var(--txt2);margin-bottom:5px}
+.fg input,.fg select{width:100%;padding:10px 12px;border:1.5px solid rgba(0,77,77,.18);
+  border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:13px;
+  color:var(--txt);background:var(--white);transition:var(--tr);outline:none}
+.fg input:focus,.fg select:focus{border-color:var(--teal3);box-shadow:0 0 0 3px rgba(0,150,136,.1)}
+.fg input.ferr{border-color:var(--red)}
+.ferr-msg{font-size:11px;color:var(--red);margin-top:3px}
+.ro input{background:#f5f5f5;cursor:default}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.tbox{background:linear-gradient(135deg,#e8f5e9,#f1f8f1);border:2px solid var(--green);
+  border-radius:var(--rs);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.tlbl{font-size:13px;font-weight:600;color:var(--green)}
+.tval{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--green)}
+.sec{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--txt3);
+  border-bottom:1px solid rgba(0,77,77,.1);padding-bottom:6px;margin-bottom:15px;margin-top:6px}
+
+/* TABLE */
+.tw{overflow-x:auto;border-radius:var(--rs)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--teal)}
+thead th{padding:11px 13px;text-align:left;color:var(--goldl);font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+tbody tr{border-bottom:1px solid rgba(0,77,77,.07);transition:var(--tr)}
+tbody tr:hover{background:rgba(0,150,136,.04)}
+tbody td{padding:10px 13px;color:var(--txt)}
+tbody tr:last-child{border-bottom:none}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.bt2{background:#e0f2f1;color:var(--teal)}.bg2{background:#e8f5e9;color:var(--green)}
+.br{background:#ffebee;color:var(--red)}.ba{background:#fff3e0;color:var(--amber)}
+
+/* SEARCH */
+.sbar{display:flex;align-items:center;gap:9px;background:var(--bg);
+  border-radius:var(--rs);padding:8px 13px;margin-bottom:16px;border:1.5px solid rgba(0,77,77,.1)}
+.sbar input{border:none;background:transparent;outline:none;
+  font-family:'DM Sans',sans-serif;font-size:14px;color:var(--txt);flex:1}
+
+/* BILL */
+.bill{background:var(--white);border:2px solid var(--teal);border-radius:var(--r);
+  padding:28px 32px;font-family:'Courier New',monospace;font-size:13px;line-height:1.9}
+.bill-name{font-family:'Playfair Display',serif;font-size:19px;color:var(--teal);font-weight:700;text-align:center}
+.bill-sub{font-size:12px;color:var(--txt3);text-align:center;margin-bottom:14px}
+.bdiv{border-top:1px dashed var(--teal3);margin:9px 0}
+.brow{display:flex;justify-content:space-between;padding:2px 0}
+.btot{font-weight:700;font-size:15px;color:var(--green);border-top:2px solid var(--green);padding-top:8px;margin-top:4px}
+.bsec{font-weight:700;color:var(--teal);margin:9px 0 3px}
+
+/* ROOM CARDS */
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.rc{border-radius:var(--r);padding:16px;cursor:pointer;transition:var(--tr);border:2px solid transparent}
+.rc.av{background:#e8f5e9;border-color:var(--green)}.rc.oc{background:#ffebee;border-color:var(--red)}
+.rc:hover{transform:translateY(-2px);box-shadow:var(--shl)}
+.rnum{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:3px}
+.rc.av .rnum{color:var(--green)}.rc.oc .rnum{color:var(--red)}
+.rtype{font-size:12px;font-weight:600;color:var(--txt2)}.rprice{font-size:12px;color:var(--txt3)}
+.rst{font-size:10px;font-weight:700;margin-top:8px;text-transform:uppercase;letter-spacing:1px}
+.rc.av .rst{color:var(--green)}.rc.oc .rst{color:var(--red)}
+
+/* MODAL */
+.mov{display:none;position:fixed;inset:0;background:rgba(0,30,30,.6);
+  backdrop-filter:blur(4px);z-index:5000;align-items:center;justify-content:center}
+.mov.open{display:flex;animation:fi .2s ease}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+.mbox{background:var(--white);border-radius:var(--r);max-width:500px;width:95%;
+  box-shadow:0 30px 80px rgba(0,0,0,.3);animation:su .22s ease;overflow:hidden}
+@keyframes su{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.mhd{padding:16px 20px 13px;background:var(--teal);display:flex;align-items:center;justify-content:space-between}
+.mhd h3{font-family:'Playfair Display',serif;color:var(--goldl);font-size:15px}
+.mcl{background:none;border:none;color:rgba(255,255,255,.6);font-size:20px;cursor:pointer}
+.mcl:hover{color:var(--white)}
+.mbd{padding:20px}
+.mft{padding:13px 20px;background:var(--bg);display:flex;justify-content:flex-end;gap:9px;
+  border-top:1px solid rgba(0,77,77,.08)}
+
+/* EMPTY */
+.empty{text-align:center;padding:44px 20px;color:var(--txt3)}
+.ei{font-size:40px;margin-bottom:11px}.empty h3{font-family:'Playfair Display',serif;font-size:16px;color:var(--txt2);margin-bottom:4px}
+
+/* REPORTS */
+.rgr{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.rtitle{font-family:'Playfair Display',serif;font-size:14px;color:var(--teal);font-weight:600;
+  margin-bottom:11px;padding-bottom:6px;border-bottom:2px solid var(--gold);display:inline-block}
+
+/* DETAIL */
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px 18px}
+.di .dl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt3);margin-bottom:2px}
+.di .dv{font-size:14px;font-weight:500;color:var(--txt)}
+
+@media(max-width:1100px){.sgrid{grid-template-columns:repeat(2,1fr)}.rgrid{grid-template-columns:repeat(2,1fr)}.rgr{grid-template-columns:1fr}}
+@media(max-width:768px){.sb{width:0;overflow:hidden}.main{margin-left:0}.f2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div id="toasts"></div>
+<div id="loader" class="hidden"><div class="ld-box"><div class="spin"></div><p>Loading...</p></div></div>
+
+<!-- LOGIN PAGE -->
+<div id="page-login" class="page active">
+  <div class="lcard">
+    <div class="ldiv"></div>
+    <div class="ltitle">Ocean View Resort</div>
+    <div class="lsub">Room Reservation System</div>
+    <div class="lloc">✦ &nbsp;Galle, Sri Lanka&nbsp; ✦</div>
+    <div class="lh2">Staff Login</div>
+    <div class="lg"><label class="lbl">Username</label><input class="linp" type="text" id="lu" placeholder="Enter username"></div>
+    <div class="lg"><label class="lbl">Password</label><input class="linp" type="password" id="lp" placeholder="Enter password"></div>
+    <div id="ls"></div>
+    <button class="lbtn" id="btn-login">Login to System</button>
+    <div class="lhint">Default: admin / admin123</div>
+  </div>
+</div>
+
+<!-- APP PAGE -->
+<div id="page-app" class="page">
+  <div class="app">
+    <aside class="sb">
+      <div class="sb-brand"><h2>Ocean View Resort</h2><p>Room Reservation System</p></div>
+      <div class="sb-staff"><div class="sl">Logged in as</div><div class="sn" id="sb-name">—</div></div>
+      <div class="sb-notif" id="sb-notif">✦ &nbsp;Ready — System online</div>
+      <div class="nsec">
+        <div class="nsect">Reservations</div>
+        <div class="ni active" data-p="dash"><span class="ni-ic">🏠</span>Dashboard</div>
+        <div class="ni" data-p="add"><span class="ni-ic">＋</span>Add Reservation</div>
+        <div class="ni" data-p="view"><span class="ni-ic">🔍</span>View Reservation</div>
+        <div class="ni" data-p="all"><span class="ni-ic">📋</span>All Reservations</div>
+        <div class="ni" data-p="bill"><span class="ni-ic">🧾</span>Calculate Bill</div>
+      </div>
+      <div class="ndiv"></div>
+      <div class="nsec">
+        <div class="nsect">Reports</div>
+        <div class="ni" data-p="r-rev"><span class="ni-ic">💰</span>Revenue Report</div>
+        <div class="ni" data-p="r-rooms"><span class="ni-ic">🛏</span>Room Availability</div>
+        <div class="ni" data-p="r-guests"><span class="ni-ic">👥</span>Guest History</div>
+      </div>
+      <div class="ndiv"></div>
+      <div class="nsec">
+        <div class="nsect">System</div>
+        <div class="ni" data-p="help"><span class="ni-ic">❓</span>Help / User Guide</div>
+      </div>
+      <div class="sb-foot"><button class="btn-lo" id="btn-lo">⏻ &nbsp;Logout</button></div>
+    </aside>
+    <div class="main">
+      <div class="mhdr"><h1 id="ptitle">Dashboard</h1><span class="dbadge" id="hdate"></span></div>
+      <div class="cnt" id="cnt"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CANCEL MODAL -->
+<div id="cmod" class="mov">
+  <div class="mbox">
+    <div class="mhd"><h3>🗑 &nbsp;Confirm Cancellation</h3><button class="mcl" onclick="closeMod('cmod')">✕</button></div>
+    <div class="mbd">
+      <p style="font-size:14px;line-height:1.7">Cancel reservation <strong id="cm-num" style="color:var(--red);font-size:16px"></strong> for <strong id="cm-g"></strong>?</p>
+      <p style="font-size:12px;color:var(--red);margin-top:9px">⚠ This cannot be undone.</p>
+    </div>
+    <div class="mft">
+      <button class="btn bo" onclick="closeMod('cmod')">No, Keep It</button>
+      <button class="btn bd" id="btn-ok-cancel">Yes, Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   OCEAN VIEW RESORT  –  WEB APPLICATION
+   ───────────────────────────────────────────────────
+   3-Tier Distributed Architecture:
+     Tier 1 - Presentation : HTML/CSS/JS (this file)
+     Tier 2 - Business     : Java REST API (port 8080)
+     Tier 3 - Data         : SQL Server (OceanViewResortDB)
+
+   Design Patterns:
+     1. SINGLETON  - ApiService  (one HTTP client instance)
+     2. OBSERVER   - EventBus    (notification/event system)
+     3. FACTORY    - PageFactory (builds page HTML dynamically)
+═══════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────
+   PATTERN 1: SINGLETON — ApiService
+   One shared instance handles ALL API calls.
+───────────────────────────────────────────────── */
+const ApiService = (() => {
+  let _inst = null;
+  function make() {
+    async function req(method, url, body) {
+      loader(true);
+      try {
+        const opt = { method, headers: {'Content-Type':'application/json','Accept':'application/json'} };
+        if (body) opt.body = JSON.stringify(body);
+        const r = await fetch('http://localhost:8080' + url, opt);
+        return await r.json();
+      } catch(e) {
+        return { status:'error', message:'Cannot connect to server. Make sure Java app is running on port 8080.' };
+      } finally { loader(false); }
+    }
+    return {
+      login:       (u,p) => req('POST',  '/api/auth/login',      {username:u,password:p}),
+      allRooms:    ()     => req('GET',   '/api/rooms'),
+      availRooms:  ()     => req('GET',   '/api/rooms/available'),
+      allRes:      ()     => req('GET',   '/api/reservations'),
+      getRes:      n      => req('GET',   '/api/reservations/'+n),
+      addRes:      d      => req('POST',  '/api/reservations', d),
+      cancelRes:   n      => req('DELETE','/api/reservations/'+n),
+    };
+  }
+  return { get(){ if(!_inst) _inst=make(); return _inst; } };
+})();
+const api = ApiService.get();
+
+/* ─────────────────────────────────────────────────
+   PATTERN 2: OBSERVER — EventBus
+   Decoupled event system. Components subscribe to
+   events without knowing about each other.
+───────────────────────────────────────────────── */
+const EventBus = (() => {
+  const s = {};
+  return {
+    on(e,cb)  { (s[e]=s[e]||[]).push(cb); },
+    emit(e,d) { (s[e]||[]).forEach(cb=>cb(d)); }
+  };
+})();
+// Observers — react to reservation events
+EventBus.on('res:added',     r => { notif('✦ NEW: '+r.num+' — '+r.name); toast('Reservation '+r.num+' saved!','ok'); });
+EventBus.on('res:cancelled', n => { notif('✦ CANCELLED: '+n+' removed'); toast('Reservation '+n+' cancelled.','info'); });
+
+/* ─────────────────────────────────────────────────
+   PATTERN 3: FACTORY — PageFactory
+   Creates the correct page HTML based on page name.
+   navigate() calls PageFactory.build() each time.
+───────────────────────────────────────────────── */
+const PF = {
+  build(p) {
+    return ({
+      dash:    () => `
+        <div class="sgrid">
+          <div class="sc t"><div class="slbl">Total Rooms</div><div class="sval" id="d-t">—</div></div>
+          <div class="sc g"><div class="slbl">Available</div><div class="sval" id="d-a">—</div></div>
+          <div class="sc a"><div class="slbl">Occupied</div><div class="sval" id="d-o">—</div></div>
+          <div class="sc p"><div class="slbl">Total Reservations</div><div class="sval" id="d-r">—</div></div>
+        </div>
+        <div class="sec">Room Status Overview</div>
+        <div class="rgrid" id="rcards"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>`,
+
+      add: () => `
+        <div class="card"><div class="cb">
+          <div class="sec">Guest Information</div>
+          <div class="f2">
+            <div class="fg"><label>Full Name *</label><input id="fn" placeholder="e.g. Kasun Perera"><div class="ferr-msg" id="en"></div></div>
+            <div class="fg"><label>Contact Number * (10 digits)</label><input id="fc" placeholder="e.g. 0771234567" maxlength="10"><div class="ferr-msg" id="ec"></div></div>
+          </div>
+          <div class="fg"><label>Address *</label><input id="fa" placeholder="e.g. 45 Galle Road, Colombo"><div class="ferr-msg" id="ea"></div></div>
+          <div class="sec" style="margin-top:20px">Room &amp; Dates</div>
+          <div class="f2">
+            <div class="fg"><label>Select Room *</label><select id="fr"><option value="">Loading...</option></select><div class="ferr-msg" id="er"></div></div>
+            <div class="fg ro"><label>Price per Night</label><input id="fp" readonly placeholder="Auto-filled"></div>
+          </div>
+          <div class="f2">
+            <div class="fg"><label>Check-In Date *</label><input type="date" id="fi"><div class="ferr-msg" id="ei"></div></div>
+            <div class="fg"><label>Check-Out Date *</label><input type="date" id="fo"><div class="ferr-msg" id="eo"></div></div>
+          </div>
+          <div class="fg ro"><label>Room Description</label><input id="fd" readonly></div>
+          <div class="tbox"><span class="tlbl">Total Amount</span><span class="tval" id="ft">LKR 0.00</span></div>
+          <div style="display:flex;gap:9px">
+            <button class="btn bg" id="btn-save">💾 &nbsp;Save Reservation</button>
+            <button class="btn bo" id="btn-clr">↺ &nbsp;Clear</button>
+          </div>
+        </div></div>`,
+
+      view: () => `
+        <div class="card"><div class="cb">
+          <div class="sbar"><span>🔍</span><input id="vi" placeholder="Enter Reservation Number e.g. RES-12345"><button class="btn bt bs" id="btn-vs">Search</button></div>
+          <div id="vres"></div>
+        </div></div>`,
+
+      all: () => `
+        <div class="card">
+          <div class="chd">
+            <div class="chd-l"><span style="font-size:18px">📋</span><h2>All Reservations</h2></div>
+            <div style="display:flex;align-items:center;gap:9px"><span class="badge bt2" id="acnt"></span><button class="btn bo bs" id="btn-aref">↺ Refresh</button></div>
+          </div>
+          <div class="cb" style="padding-top:13px">
+            <div class="sbar"><span>🔍</span><input id="aq" placeholder="Filter by name, room, or reservation number..."></div>
+            <div class="tw" id="atbl"><div class="empty"><div class="spin" style="margin:0 auto"></div></div></div>
+          </div>
+        </div>`,
+
+      bill: () => `
+        <div class="card"><div class="cb">
+          <div class="sbar"><span>🔍</span><input id="bi" placeholder="Enter Reservation Number"><button class="btn bt bs" id="btn-bg">Generate Bill</button></div>
+          <div id="bres"></div>
+          <div id="bprint" class="hidden" style="margin-top:14px"><button class="btn bt" onclick="window.print()">🖨 &nbsp;Print Bill</button></div>
+        </div></div>`,
+
+      'r-rev': () => `
+        <div class="sgrid">
+          <div class="sc g"><div class="slbl">Total Revenue</div><div class="sval" id="rv-t">—</div></div>
+          <div class="sc t"><div class="slbl">Total Bookings</div><div class="sval" id="rv-b">—</div></div>
+          <div class="sc a"><div class="slbl">Avg Stay (Nights)</div><div class="sval" id="rv-n">—</div></div>
+          <div class="sc p"><div class="slbl">Avg Revenue/Booking</div><div class="sval" id="rv-a">—</div></div>
+        </div>
+        <div class="rgr">
+          <div class="card"><div class="cb"><div class="rtitle">Revenue by Room Type</div>
+            <div class="tw"><table><thead><tr><th>Type</th><th>Bookings</th><th>Total (LKR)</th><th>Avg/Booking</th></tr></thead><tbody id="rv-ty"></tbody></table></div>
+          </div></div>
+          <div class="card"><div class="cb"><div class="rtitle">Monthly Breakdown</div>
+            <div class="tw"><table><thead><tr><th>Month</th><th>Bookings</th><th>Revenue (LKR)</th></tr></thead><tbody id="rv-mo"></tbody></table></div>
+          </div></div>
+        </div>`,
+
+      'r-rooms': () => `
+        <div class="sgrid">
+          <div class="sc t"><div class="slbl">Total Rooms</div><div class="sval" id="rr-t">—</div></div>
+          <div class="sc g"><div class="slbl">Available</div><div class="sval" id="rr-a">—</div></div>
+          <div class="sc a"><div class="slbl">Occupied</div><div class="sval" id="rr-o">—</div></div>
+          <div class="sc p"><div class="slbl">Occupancy Rate</div><div class="sval" id="rr-r">—</div></div>
+        </div>
+        <div class="rgr">
+          <div class="card"><div class="cb"><div class="rtitle">All Rooms – Live Status</div>
+            <div class="tw"><table><thead><tr><th>Room</th><th>Type</th><th>Price/Night (LKR)</th><th>Status</th></tr></thead><tbody id="rr-rb"></tbody></table></div>
+          </div></div>
+          <div class="card"><div class="cb"><div class="rtitle">Currently Occupied</div>
+            <div class="tw"><table><thead><tr><th>Room</th><th>Guest</th><th>Check-In</th><th>Check-Out</th></tr></thead><tbody id="rr-ob"></tbody></table></div>
+          </div></div>
+        </div>`,
+
+      'r-guests': () => `
+        <div class="sgrid">
+          <div class="sc p"><div class="slbl">Unique Guests</div><div class="sval" id="gr-u">—</div></div>
+          <div class="sc a"><div class="slbl">Repeat Guests</div><div class="sval" id="gr-r">—</div></div>
+          <div class="sc g"><div class="slbl">Total Revenue</div><div class="sval" id="gr-t">—</div></div>
+          <div class="sc t"><div class="slbl">Top Spender</div><div class="sval" id="gr-ts" style="font-size:15px">—</div></div>
+        </div>
+        <div class="sbar"><span>🔍</span><input id="grq" placeholder="Search by name or contact..."><button class="btn bt bs" id="btn-grs">Search</button><button class="btn bo bs" id="btn-grr">Show All</button></div>
+        <div class="rgr">
+          <div class="card"><div class="cb"><div class="rtitle">Guest Summary</div>
+            <div class="tw"><table><thead><tr><th>Name</th><th>Contact</th><th>Bookings</th><th>Total Spent (LKR)</th><th>Last Visit</th></tr></thead><tbody id="gr-sb"></tbody></table></div>
+          </div></div>
+          <div class="card"><div class="cb"><div class="rtitle">Booking History</div>
+            <div class="tw"><table><thead><tr><th>Res. No.</th><th>Guest</th><th>Room</th><th>Check-In</th><th>Total (LKR)</th></tr></thead><tbody id="gr-hb"></tbody></table></div>
+          </div></div>
+        </div>`,
+
+      help: () => `
+        <div class="card"><div class="cb">
+          <div class="sec">User Guide</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+            ${hc('1. Login','Use your staff username and password. Default: <b>admin / admin123</b>')}
+            ${hc('2. Add Reservation','Select an available room, enter guest details (name, contact, address), set check-in and check-out dates. Contact must be 10 digits.')}
+            ${hc('3. View Reservation','Enter the reservation number (e.g. RES-12345) to view full details.')}
+            ${hc('4. Calculate Bill','Enter the reservation number to generate an invoice. 10% tax is applied automatically.')}
+            ${hc('5. All Reservations','View and manage all bookings. Cancel reservations with the Cancel button.')}
+            ${hc('6. Revenue Report','View total revenue, room type breakdown, and monthly statistics.')}
+            ${hc('7. Room Availability','See live status of all rooms and which guests are currently checked in.')}
+            ${hc('8. Guest History','View all guest booking history. Search by name or contact number.')}
+          </div>
+          <div class="sec">Room Rates</div>
+          <div class="tw" style="max-width:380px"><table><thead><tr><th>Room Type</th><th>Price / Night</th></tr></thead><tbody>
+            <tr><td>Standard (101, 102)</td><td>LKR 5,000.00</td></tr>
+            <tr><td>Deluxe (201, 202)</td><td>LKR 9,500.00</td></tr>
+            <tr><td>Suite (301, 302)</td><td>LKR 18,000.00</td></tr>
+          </tbody></table></div>
+        </div></div>`,
+    }[p] || (() => '<p>Page not found</p>'))();
+  }
+};
+function hc(t,b){ return `<div style="background:var(--bg);border-radius:var(--rs);padding:14px;border-left:3px solid var(--gold)"><div style="font-weight:700;color:var(--teal);margin-bottom:5px">${t}</div><div style="font-size:13px;color:var(--txt2);line-height:1.6">${b}</div></div>`; }
+
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+let allResCache=[], allRoomsCache=[], grCache=[], cancelNum=null;
+
+const TITLES={dash:'Dashboard',add:'Add New Reservation',view:'View Reservation Details',
+  all:'All Reservations',bill:'Calculate Bill','r-rev':'Revenue Report',
+  'r-rooms':'Room Availability Report','r-guests':'Guest History Report',help:'Help / User Guide'};
+
+/* ═══════════════════════════════════════════════
+   NAVIGATION — uses PageFactory
+═══════════════════════════════════════════════ */
+function nav(p) {
+  document.querySelectorAll('.ni').forEach(n=>n.classList.toggle('active',n.dataset.p===p));
+  document.getElementById('ptitle').textContent = TITLES[p]||p;
+  document.getElementById('cnt').innerHTML = PF.build(p);   // ← Factory Pattern
+  ({dash:iDash,add:iAdd,view:iView,all:iAll,bill:iBill,
+    'r-rev':iRev,'r-rooms':iRooms,'r-guests':iGuests}[p]||noop)();
+}
+function noop(){}
+
+/* LOGIN */
+document.getElementById('btn-login').onclick = doLogin;
+document.getElementById('lp').onkeypress = e=>{ if(e.key==='Enter') doLogin(); };
+async function doLogin(){
+  const u=gi('lu'),p=gi('lp'),s=document.getElementById('ls');
+  if(!u||!p){s.className='err';s.textContent='Enter username and password.';return;}
+  s.className='info';s.textContent='Authenticating...';
+  document.getElementById('btn-login').disabled=true;
+  const r=await api.login(u,p);
+  document.getElementById('btn-login').disabled=false;
+  if(r.status==='success'){
+    s.className='ok';s.textContent='Welcome, '+r.fullName+'!';
+    gs('sb-name').textContent=r.fullName;
+    setTimeout(()=>{
+      pg('page-login',false);pg('page-app',true);
+      gs('hdate').textContent=new Date().toLocaleDateString('en-GB',{dateStyle:'long'});
+      nav('dash');
+    },600);
+  } else { s.className='err';s.textContent=r.message||'Invalid credentials.'; gs('lp').value=''; }
+}
+
+/* LOGOUT */
+document.getElementById('btn-lo').onclick=()=>{
+  if(!confirm('Logout?')) return;
+  pg('page-app',false);pg('page-login',true);
+  ['lu','lp'].forEach(id=>gs(id).value='');
+  gs('ls').textContent='';
+};
+
+/* NAV CLICKS */
+document.querySelectorAll('.ni').forEach(n=>n.onclick=()=>nav(n.dataset.p));
+
+/* ═══════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════ */
+async function iDash(){
+  const [rooms,res]=await Promise.all([api.allRooms(),api.allRes()]);
+  allRoomsCache=ar(rooms); allResCache=ar(res);
+  const av=allRoomsCache.filter(isAv).length;
+  st('d-t',allRoomsCache.length); st('d-a',av);
+  st('d-o',allRoomsCache.length-av); st('d-r',allResCache.length);
+  const g=gs('rcards');
+  if(!allRoomsCache.length){g.innerHTML='<div class="empty"><div class="ei">🛏</div><h3>No rooms found</h3></div>';return;}
+  g.innerHTML=allRoomsCache.map(r=>{
+    const a=isAv(r);
+    return `<div class="rc ${a?'av':'oc'}"><div class="rnum">${r.roomNumber}</div><div class="rtype">${r.roomType}</div><div class="rprice">LKR ${fmt(r.pricePerNight)} / night</div><div class="rst">${a?'✅ Available':'🔴 Occupied'}</div></div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   ADD RESERVATION  (with full validation)
+═══════════════════════════════════════════════ */
+async function iAdd(){
+  const rooms=await api.availRooms();
+  const sel=gs('fr');
+  sel.innerHTML='<option value="">-- Select Available Room --</option>';
+  ar(rooms).forEach(r=>{
+    const o=document.createElement('option');
+    o.value=JSON.stringify(r);
+    o.textContent=`Room ${r.roomNumber} – ${r.roomType} (LKR ${fmt(r.pricePerNight)}/night)`;
+    sel.appendChild(o);
+  });
+  const today=new Date().toISOString().split('T')[0];
+  gs('fi').min=today; gs('fo').min=today;
+  sel.onchange=upRoom;
+  gs('fi').onchange=calcT; gs('fo').onchange=calcT;
+  gs('btn-save').onclick=saveRes;
+  gs('btn-clr').onclick=clrRes;
+}
+function upRoom(){
+  const v=gs('fr').value;
+  if(!v){gs('fp').value='';gs('fd').value='';return;}
+  const r=JSON.parse(v);
+  gs('fp').value='LKR '+fmt(r.pricePerNight)+' per night';
+  const d={Standard:'Garden view. WiFi, TV, AC, Hot Water.',Deluxe:'Sea view balcony. WiFi, Smart TV, Mini Bar.',Suite:'Ocean panorama. Jacuzzi, Butler, Breakfast.'};
+  gs('fd').value=d[r.roomType]||'—';
+  calcT();
+}
+function calcT(){
+  const v=gs('fr').value,ci=gs('fi').value,co=gs('fo').value,lbl=gs('ft');
+  if(!v||!ci||!co){lbl.textContent='LKR 0.00';return;}
+  const n=(new Date(co)-new Date(ci))/86400000;
+  if(n<=0){lbl.style.color='var(--red)';lbl.textContent='⚠ Invalid dates';return;}
+  lbl.style.color='var(--green)';
+  lbl.textContent='LKR '+fmt(n*JSON.parse(v).pricePerNight)+' ('+n+' night/s)';
+}
+function valAdd(){
+  let ok=true;
+  const rules=[
+    ['fn','en',x=>x.trim().length>=2,    'Enter full name (min 2 characters)'],
+    ['fc','ec',x=>/^\d{10}$/.test(x.trim()),'Must be exactly 10 digits'],
+    ['fa','ea',x=>x.trim().length>=5,    'Enter a valid address'],
+    ['fr','er',x=>x!=='',                'Please select a room'],
+    ['fi','ei',x=>x!=='',                'Select check-in date'],
+    ['fo','eo',x=>{ const c=gs('fi').value; return x&&c&&new Date(x)>new Date(c); },'Check-out must be after check-in'],
+  ];
+  rules.forEach(([id,eid,test,msg])=>{
+    const el=gs(id),err=gs(eid);
+    if(!test(el.value)){el.classList.add('ferr');err.textContent=msg;ok=false;}
+    else{el.classList.remove('ferr');err.textContent='';}
+  });
+  return ok;
+}
+async function saveRes(){
+  if(!valAdd()) return;
+  const room=JSON.parse(gs('fr').value);
+  const d={guestName:gi('fn'),address:gi('fa'),contactNumber:gi('fc'),
+    roomNumber:room.roomNumber,roomType:room.roomType,
+    checkInDate:gs('fi').value,checkOutDate:gs('fo').value};
+  const r=await api.addRes(d);
+  if(r.status==='success'){
+    EventBus.emit('res:added',{num:r.reservationNumber,name:d.guestName}); // ← Observer emit
+    alert('✅ Saved!\nNumber: '+r.reservationNumber+'\nTotal: LKR '+fmt(r.totalAmount));
+    clrRes(); await iAdd();
+  } else toast(r.message||'Failed to save.','err');
+}
+function clrRes(){
+  ['fn','fc','fa','fi','fo'].forEach(id=>gs(id).value='');
+  gs('fr').selectedIndex=0; gs('fp').value=''; gs('fd').value='';
+  gs('ft').textContent='LKR 0.00'; gs('ft').style.color='var(--green)';
+  ['en','ec','ea','er','ei','eo'].forEach(id=>gs(id).textContent='');
+}
+
+/* ═══════════════════════════════════════════════
+   VIEW RESERVATION
+═══════════════════════════════════════════════ */
+function iView(){
+  setTimeout(function(){
+    var b=gs('btn-vs'), i=gs('vi');
+    if(b) b.onclick=srchRes;
+    if(i) i.onkeypress=function(e){if(e.key==='Enter')srchRes();};
+  },50);
+}
+async function srchRes(){
+  var inp=gs('vi');
+  if(!inp){toast('Input not ready.','err');return;}
+  var n=inp.value.trim();
+  if(!n){toast('Enter a reservation number.','err');return;}
+  var div=gs('vres');
+  if(!div) return;
+  var r=await api.getRes(n);
+  if(!r||r.status==='error'||!r.reservationNumber){
+    div.innerHTML='<div class="empty"><div class="ei">&#128269;</div><h3>Reservation Not Found</h3><p>'+(r&&r.message?r.message:'No reservation found for: '+n)+'</p></div>';
+    return;
+  }
+  div.innerHTML=
+    '<div class="card">'+
+    '<div class="chd"><div class="chd-l"><span style="font-size:18px">&#128196;</span>'+
+    '<h2>Reservation '+r.reservationNumber+'</h2></div></div>'+
+    '<div class="cb"><div class="dgrid">'+
+    di('Reservation No',r.reservationNumber)+
+    di('Guest Name',r.guestName)+
+    di('Contact Number',r.contactNumber)+
+    di('Address',r.address)+
+    di('Room Number',r.roomNumber)+
+    di('Room Type',r.roomType)+
+    di('Check-In Date',r.checkInDate)+
+    di('Check-Out Date',r.checkOutDate)+
+    di('No. of Nights',r.numberOfNights)+
+    di('Total Amount','LKR '+fmt(r.totalAmount))+
+    '</div></div></div>';
+}
+function di(l,v){
+  return '<div class="di"><div class="dl">'+l+'</div><div class="dv">'+(v||'&mdash;')+'</div></div>';
+}
+
+/* ═══════════════════════════════════════════════
+   ALL RESERVATIONS
+═══════════════════════════════════════════════ */
+async function iAll(){
+  setTimeout(function(){
+    var ref=gs('btn-aref'), q=gs('aq');
+    if(ref) ref.onclick=iAll;
+    if(q) q.oninput=filtAll;
+  },50);
+  var data = await api.allRes();
+  allResCache = Array.isArray(data) ? data : [];
+  rendAll(allResCache);
+}
+function filtAll(){
+  var q=(gs('aq')&&gs('aq').value||'').toLowerCase();
+  rendAll(allResCache.filter(function(r){
+    return (r.guestName||'').toLowerCase().indexOf(q)>=0 ||
+           (r.reservationNumber||'').toLowerCase().indexOf(q)>=0 ||
+           (r.roomNumber||'').toLowerCase().indexOf(q)>=0;
+  }));
+}
+function rendAll(list){
+  var cnt=gs('acnt'), w=gs('atbl');
+  if(cnt) cnt.textContent=list.length+' record/s';
+  if(!w) return;
+  if(!list.length){
+    w.innerHTML='<div class="empty"><div class="ei">&#128203;</div><h3>No reservations found</h3><p>No records match your search.</p></div>';
+    return;
+  }
+  var rows='';
+  for(var i=0;i<list.length;i++){
+    var r=list[i];
+    var gSafe=(r.guestName||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    rows+='<tr>'+
+      '<td><strong style="color:var(--teal)">'+r.reservationNumber+'</strong></td>'+
+      '<td>'+r.guestName+'</td>'+
+      '<td>'+r.contactNumber+'</td>'+
+      '<td>'+r.roomNumber+'</td>'+
+      '<td><span class="badge bt2">'+r.roomType+'</span></td>'+
+      '<td>'+r.checkInDate+'</td>'+
+      '<td>'+r.checkOutDate+'</td>'+
+      '<td>'+r.numberOfNights+'</td>'+
+      '<td><strong>LKR '+fmt(r.totalAmount)+'</strong></td>'+
+      '<td><button class="btn bd bs" onclick="openCan(\''+r.reservationNumber+'\',\''+gSafe+'\')">Cancel</button></td>'+
+    '</tr>';
+  }
+  w.innerHTML='<table><thead><tr>'+
+    '<th>Res. No.</th><th>Guest Name</th><th>Contact</th><th>Room</th>'+
+    '<th>Type</th><th>Check-In</th><th>Check-Out</th><th>Nights</th>'+
+    '<th>Total (LKR)</th><th>Action</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+function openCan(num,guest){
+  cancelNum=num;
+  var cn=gs('cm-num'), cg=gs('cm-g'), btn=gs('btn-ok-cancel');
+  if(cn) cn.textContent=num;
+  if(cg) cg.textContent=guest;
+  document.getElementById('cmod').classList.add('open');
+  if(btn) btn.onclick=doCan;
+}
+async function doCan(){
+  closeMod('cmod');
+  var r=await api.cancelRes(cancelNum);
+  if(r.status==='success'){
+    EventBus.emit('res:cancelled',cancelNum);
+    await iAll();
+  } else toast(r.message||'Failed to cancel.','err');
+}
+
+/* ═══════════════════════════════════════════════
+   BILLING
+═══════════════════════════════════════════════ */
+function iBill(){
+  setTimeout(function(){
+    var btn=gs('btn-bg'), inp=gs('bi');
+    if(btn) btn.onclick=genBill;
+    if(inp) inp.onkeypress=function(e){if(e.key==='Enter')genBill();};
+  },50);
+}
+async function genBill(){
+  var inp=gs('bi');
+  if(!inp){toast('Input not ready.','err');return;}
+  var n=inp.value.trim();
+  if(!n){toast('Enter a reservation number.','err');return;}
+  var div=gs('bres'), prt=gs('bprint');
+  if(!div) return;
+  var r=await api.getRes(n);
+  if(!r||r.status==='error'||!r.reservationNumber){
+    div.innerHTML='<div class="empty"><div class="ei">&#129534;</div><h3>Reservation Not Found</h3><p>'+(r&&r.message?r.message:'No reservation found for: '+n)+'</p></div>';
+    if(prt) prt.classList.add('hidden');
+    return;
+  }
+  var nts=parseInt(r.numberOfNights)||1;
+  var sub=parseFloat(r.totalAmount)||0;
+  var ppn=sub/nts;
+  var tax=sub*0.10;
+  var grand=sub+tax;
+  var now=new Date().toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
+  div.innerHTML=
+    '<div class="bill">'+
+    '<div class="bill-name">OCEAN VIEW RESORT</div>'+
+    '<div class="bill-sub">Galle, Sri Lanka &nbsp;&middot;&nbsp; Room Reservation Invoice</div>'+
+    '<div class="bdiv"></div>'+
+    '<div class="brow"><span>Bill Date</span><span>'+now+'</span></div>'+
+    '<div class="brow"><span>Reservation No</span><span><strong>'+r.reservationNumber+'</strong></span></div>'+
+    '<div class="bdiv"></div>'+
+    '<div class="bsec">GUEST INFORMATION</div>'+
+    '<div class="brow"><span>Guest Name</span><span>'+r.guestName+'</span></div>'+
+    '<div class="brow"><span>Contact Number</span><span>'+r.contactNumber+'</span></div>'+
+    '<div class="brow"><span>Address</span><span>'+r.address+'</span></div>'+
+    '<div class="bdiv"></div>'+
+    '<div class="bsec">BOOKING DETAILS</div>'+
+    '<div class="brow"><span>Room Number</span><span>'+r.roomNumber+'</span></div>'+
+    '<div class="brow"><span>Room Type</span><span>'+r.roomType+'</span></div>'+
+    '<div class="brow"><span>Check-In Date</span><span>'+r.checkInDate+'</span></div>'+
+    '<div class="brow"><span>Check-Out Date</span><span>'+r.checkOutDate+'</span></div>'+
+    '<div class="brow"><span>Duration</span><span>'+nts+' night/s</span></div>'+
+    '<div class="bdiv"></div>'+
+    '<div class="bsec">PAYMENT SUMMARY</div>'+
+    '<div class="brow"><span>Price per Night</span><span>LKR '+fmt(ppn)+'</span></div>'+
+    '<div class="brow"><span>Subtotal ('+nts+' nights)</span><span>LKR '+fmt(sub)+'</span></div>'+
+    '<div class="brow"><span>Tax (10%)</span><span>LKR '+fmt(tax)+'</span></div>'+
+    '<div class="brow btot"><span>GRAND TOTAL</span><span>LKR '+fmt(grand)+'</span></div>'+
+    '<div class="bdiv"></div>'+
+    '<div style="text-align:center;color:var(--txt3);font-size:12px;margin-top:8px">Thank you for choosing Ocean View Resort!</div>'+
+    '</div>';
+  if(prt) prt.classList.remove('hidden');
+}
+
+/* ═══════════════════════════════════════════════
+   REVENUE REPORT
+═══════════════════════════════════════════════ */
+async function iRev(){
+  const list=ar(await api.allRes());
+  let rev=0,nts=0; const bt={},bm={};
+  list.forEach(r=>{
+    const a=pf(r.totalAmount),n=pi(r.numberOfNights),t=r.roomType||'?',m=mo(r.checkInDate);
+    rev+=a; nts+=n;
+    if(!bt[t]) bt[t]=[0,0]; bt[t][0]++; bt[t][1]+=a;
+    if(!bm[m]) bm[m]=[0,0]; bm[m][0]++; bm[m][1]+=a;
+  });
+  const n=list.length;
+  st('rv-t','LKR '+fmt(rev)); st('rv-b',n);
+  st('rv-n',n?(nts/n).toFixed(1):'0'); st('rv-a','LKR '+fmt(n?rev/n:0));
+  gs('rv-ty').innerHTML=Object.entries(bt).map(([t,[c,r]])=>`<tr><td><span class="badge bt2">${t}</span></td><td>${c}</td><td><strong>LKR ${fmt(r)}</strong></td><td>LKR ${fmt(c?r/c:0)}</td></tr>`).join('')||nd(4);
+  gs('rv-mo').innerHTML=Object.entries(bm).sort().map(([m,[c,r]])=>`<tr><td>${m}</td><td>${c}</td><td><strong>LKR ${fmt(r)}</strong></td></tr>`).join('')||nd(3);
+}
+
+/* ═══════════════════════════════════════════════
+   ROOM AVAILABILITY REPORT
+═══════════════════════════════════════════════ */
+async function iRooms(){
+  const [rooms,res]=await Promise.all([api.allRooms(),api.allRes()]);
+  const rl=ar(rooms),resl=ar(res);
+  const tot=rl.length,av=rl.filter(isAv).length,oc=tot-av;
+  st('rr-t',tot); st('rr-a',av); st('rr-o',oc);
+  st('rr-r',tot?Math.round(oc*100/tot)+'%':'0%');
+  gs('rr-rb').innerHTML=rl.map(r=>`<tr><td><strong>${r.roomNumber}</strong></td><td><span class="badge bt2">${r.roomType}</span></td><td>LKR ${fmt(r.pricePerNight)}</td><td>${isAv(r)?'<span class="badge bg2">✅ Available</span>':'<span class="badge br">🔴 Occupied</span>'}</td></tr>`).join('')||nd(4);
+  gs('rr-ob').innerHTML=resl.map(r=>`<tr><td><strong>${r.roomNumber}</strong></td><td>${r.guestName}</td><td>${r.checkInDate}</td><td>${r.checkOutDate}</td></tr>`).join('')||nd(4);
+}
+
+/* ═══════════════════════════════════════════════
+   GUEST HISTORY REPORT
+═══════════════════════════════════════════════ */
+async function iGuests(){
+  grCache=ar(await api.allRes());
+  rendGuests(grCache);
+  gs('btn-grs').onclick=()=>rendGuests(grCache.filter(r=>{const q=gi('grq').toLowerCase();return(r.guestName||'').toLowerCase().includes(q)||(r.contactNumber||'').toLowerCase().includes(q);}));
+  gs('btn-grr').onclick=()=>{gs('grq').value='';rendGuests(grCache);};
+  gs('grq').onkeypress=e=>{if(e.key==='Enter')gs('btn-grs').click();};
+}
+function rendGuests(list){
+  const g={},lv={};let rev=0,top='—',topA=0;
+  list.forEach(r=>{
+    const n=r.guestName,a=pf(r.totalAmount);rev+=a;
+    if(!g[n])g[n]={c:r.contactNumber,cnt:0,tot:0};
+    g[n].cnt++;g[n].tot+=a;
+    if(!lv[n]||r.checkInDate>lv[n])lv[n]=r.checkInDate;
+    if(g[n].tot>topA){topA=g[n].tot;top=n;}
+  });
+  const uni=Object.keys(g).length,rep=Object.values(g).filter(x=>x.cnt>1).length;
+  st('gr-u',uni); st('gr-r',rep); st('gr-t','LKR '+fmt(rev));
+  st('gr-ts',top.length>13?top.slice(0,11)+'…':top);
+  const sorted=Object.entries(g).sort((a,b)=>b[1].tot-a[1].tot);
+  gs('gr-sb').innerHTML=sorted.map(([n,x])=>`<tr><td><strong>${n}</strong>${x.cnt>1?' <span class="badge ba">Repeat</span>':''}</td><td>${x.c||'—'}</td><td>${x.cnt}</td><td><strong>LKR ${fmt(x.tot)}</strong></td><td>${lv[n]||'—'}</td></tr>`).join('')||nd(5);
+  gs('gr-hb').innerHTML=list.map(r=>`<tr><td style="color:var(--teal)"><strong>${r.reservationNumber}</strong></td><td>${r.guestName}</td><td>${r.roomNumber}</td><td>${r.checkInDate}</td><td>LKR ${fmt(r.totalAmount)}</td></tr>`).join('')||nd(5);
+}
+
+/* ═══════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════ */
+const gs = id => document.getElementById(id);
+const gi = id => gs(id)?.value||'';
+const st = (id,v) => { const e=gs(id); if(e) e.textContent=v; };
+const ar = d => Array.isArray(d)?d:[];
+const isAv = r => r.isAvailable===true||r.isAvailable==='true'||r.isAvailable==1;
+const pf = s => { try{return parseFloat(s)||0}catch{return 0} };
+const pi = s => { try{return parseInt(s)||0}catch{return 0} };
+const nd = c => `<tr><td colspan="${c}" style="text-align:center;padding:18px;color:var(--txt3)">No data</td></tr>`;
+const mo = d => { try{return new Date(d).toLocaleString('en-GB',{month:'short',year:'numeric'})}catch{return '?'} };
+function fmt(n){ return parseFloat(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function pg(id,s){ gs(id).classList.toggle('hidden',!s); if(s) gs(id).classList.add('active'); else gs(id).classList.remove('active'); }
+function show(id,s){ gs(id).classList.toggle('hidden',!s); }
+function loader(s){ gs('loader').classList.toggle('hidden',!s); }
+function closeMod(id){ gs(id).classList.remove('open'); }
+function notif(msg){
+  const e=gs('sb-notif'); e.textContent=msg; e.style.background='rgba(0,150,100,.2)';
+  setTimeout(()=>{e.textContent='✦  Ready — System online';e.style.background='';},7000);
+}
+function toast(msg,type='info'){
+  const c=gs('toasts'),t=document.createElement('div');
+  t.className='toast'+(type==='ok'?' ok':type==='err'?' err':'');
+  t.textContent=msg; c.appendChild(t);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),350);},3500);
+}
+document.querySelectorAll('.mov').forEach(m=>m.onclick=e=>{if(e.target===m)m.classList.remove('open');});
+</script>
+</body>
+</html>

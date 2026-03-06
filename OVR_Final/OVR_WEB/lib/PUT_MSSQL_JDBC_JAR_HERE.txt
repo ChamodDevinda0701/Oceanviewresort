@@ -1,0 +1,32 @@
+INSTRUCTIONS - SQL Server JDBC Driver
+======================================
+
+1. Download the Microsoft JDBC Driver for SQL Server:
+   https://learn.microsoft.com/en-us/sql/connect/jdbc/download-microsoft-jdbc-driver-for-sql-server
+
+   OR direct download (version 12.x):
+   https://go.microsoft.com/fwlink/?linkid=2259226
+
+2. Extract the downloaded zip file.
+
+3. Inside the extracted folder find:
+   mssql-jdbc-12.x.x.jreXX.jar
+   (Pick the one matching your Java version, e.g. jre11 or jre8)
+
+4. Rename it to:  mssql-jdbc.jar
+
+5. Copy  mssql-jdbc.jar  into THIS folder  (OceanViewResort/lib/)
+
+6. Also copy  mssql-jdbc_auth-12.x.x.x64.dll  into:
+   C:\Windows\System32\
+   (This DLL is needed for Windows Authentication)
+
+7. Open the project in NetBeans and Run.
+
+DATABASE SETUP:
+- Open SQL Server Management Studio (SSMS)
+- Connect to: localhost (Windows Authentication)
+- Run this query:  CREATE DATABASE OceanViewResortDB;
+- The app will create all tables automatically on first run.
+
+Default login: admin / admin123
